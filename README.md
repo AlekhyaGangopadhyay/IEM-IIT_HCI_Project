@@ -1,4 +1,4 @@
-# EEG Data Augmentation and Classification for Robotic Movement
+# EEG Data Augmentation and Classification (HCI PROJECT)
 
 ## Overview
 
