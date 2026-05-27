@@ -1,34 +1,47 @@
-# EEG Direction Classification using GAN + LSTM
+# EEG Direction Classification using WGAN-GP and LSTM
 
-## Overview
-
-This project focuses on EEG-based direction classification using deep learning and signal processing techniques. The complete pipeline includes:
-
-* EEG preprocessing and cleaning
-* Chebyshev bandpass filtering
-* Synthetic EEG generation using WGAN-GP (Wasserstein GAN with Gradient Penalty)
-* Sequence generation for temporal learning
-* LSTM-based EEG direction classification
-* Performance evaluation using train and test accuracy
-
-The project was developed as part of the Human Computer Interface (HCI) research workflow.
+A deep learning pipeline for classifying directional intent from EEG signals using
+Chebyshev bandpass filtering, synthetic data augmentation via Wasserstein GAN with
+Gradient Penalty, and temporal sequence learning with LSTM networks.
 
 ---
 
-# Dataset Description
+## Abstract
 
-The dataset consists of EEG recordings corresponding to four directional classes:
+This work presents an end-to-end framework for EEG-based directional movement
+classification across four classes: Right, Left, Forward, and Backward. The pipeline
+combines classical signal preprocessing with modern generative and sequence models.
+Raw EEG recordings are denoised using a Chebyshev Type-I bandpass filter to retain
+the alpha and beta bands relevant to motor imagery. A Wasserstein GAN with Gradient
+Penalty (WGAN-GP) is trained to generate synthetic EEG windows for data augmentation.
+The combined real and synthetic data is segmented into temporal sequences and fed
+into a two-layer LSTM classifier. The model achieves a final train accuracy of 95.41%
+and test accuracy of 95.72%.
 
-* Right
-* Left
-* Forward
-* Backward
+---
 
-The EEG data was organized subject-wise and task-wise.
+## 1. Introduction
 
-## Original Dataset Structure
+EEG-based brain-computer interfaces (BCIs) face two persistent challenges: signal
+noise and limited sample size. This project addresses both. Noise is handled through
+narrow-band filtering targeting the motor imagery frequency range. Data scarcity is
+addressed through adversarial synthesis using a stabilized GAN variant. The
+classification task is framed as a multi-class temporal sequence problem and solved
+using a recurrent neural network.
 
-```text
+---
+
+## 2. Dataset
+
+EEG recordings were collected subject-wise and organized by directional task. Each
+direction folder contains multiple multichannel EEG recordings stored as `.xlsx`
+files.
+
+**Classes:** Right, Left, Forward, Backward
+
+**Dataset structure:**
+
+```
 EEG Dataset/
 ├── Subject 1/
 │   ├── Right/
@@ -43,382 +56,220 @@ EEG Dataset/
     └── Backward/
 ```
 
-Each direction folder contains multiple EEG `.xlsx` recordings.
+**EEG channels used:**
 
----
-
-# EEG Channels Used
-
-The following EEG channels were used for classification:
-
-```python
-[
-    'P4 - O2',
-    'P3 - O1',
-    'F4 - C4'
-]
+```
+P4 - O2
+P3 - O1
+F4 - C4
 ```
 
-These channels were selected for capturing directional brain activity patterns.
+These channels were selected for their relevance to directional cortical activity
+patterns.
 
 ---
 
-# Signal Processing Pipeline
+## 3. Methodology
 
-The complete processing pipeline:
+### 3.1 Pipeline Overview
 
-```text
+```
 Raw EEG
-→ Chebyshev Filtering
-→ GAN-based Synthetic EEG Generation
-→ Sequence Generation
-→ Normalization
-→ LSTM Training
-→ Direction Classification
+   │
+   ▼
+Chebyshev Bandpass Filtering
+   │
+   ▼
+WGAN-GP Synthetic EEG Generation
+   │
+   ▼
+Sequence Generation and Normalization
+   │
+   ▼
+LSTM Training
+   │
+   ▼
+Direction Classification
 ```
 
----
+### 3.2 Chebyshev Bandpass Filtering
 
-# Project Directory Structure
+A Chebyshev Type-I bandpass filter was applied to suppress low-frequency drift,
+high-frequency noise, and unwanted artifacts while preserving EEG bands relevant
+to cognitive and motor imagery activity.
 
-```text
-IEM-IIT_HCI_Project/
-│
-├── Dataset/
-│
-├── Synthetic Dataset/
-│
-├── Chebyshev Filtered Data/
-│
-├── GAN/
-│   ├── train_wgan_gp.py
-│   ├── generate_synthetic.py
-│
-├── Filtering/
-│   ├── chebyshev_filter.py
-│
-├── LSTM/
-│   ├── lstm-eeg-sequence-classification.ipynb
-│
-├── Models/
-│   ├── eeg_lstm_model.pth
-│
-├── Results/
-│   ├── accuracy_plot.png
-│   ├── confusion_matrix.png
-│
-├── requirements.txt
-├── README.md
+**Filter parameters:**
+
+| Parameter         | Value  |
+| ----------------- | ------ |
+| Sampling rate     | 250 Hz |
+| Low cutoff        | 8 Hz   |
+| High cutoff       | 30 Hz  |
+| Filter order      | 4      |
+| Passband ripple   | 0.5 dB |
+
+The passband (8 to 30 Hz) covers the alpha and beta bands, which are well
+established in motor imagery literature.
+
+### 3.3 Synthetic EEG Generation (WGAN-GP)
+
+A Wasserstein GAN with Gradient Penalty was trained to learn the distribution of
+real EEG windows and generate synthetic samples for augmentation.
+
+**Generator:** Accepts latent noise vectors and outputs synthetic EEG windows
+through fully connected layers with BatchNorm and LeakyReLU activations.
+
+**Critic:** Distinguishes real from synthetic EEG and estimates the Wasserstein
+distance. LayerNorm is used in place of BatchNorm for training stability.
+
+**Training behavior:** The Wasserstein distance increased steadily and stabilized
+at a positive value, indicating healthy adversarial learning without mode collapse.
+
 ```
-
----
-
-# File Descriptions
-
-# 1. EEG Dataset Files
-
-These files contain the original EEG recordings collected for directional movement classification.
-
-Each file contains multichannel EEG data stored in `.xlsx` format.
-
-Classes:
-
-* Right
-* Left
-* Forward
-* Backward
-
----
-
-# 2. GAN Training Files
-
-## `train_wgan_gp.py`
-
-This file implements a Wasserstein GAN with Gradient Penalty (WGAN-GP) for synthetic EEG generation.
-
-### Features
-
-* Wasserstein distance optimization
-* Gradient penalty stabilization
-* EEG window-based training
-* Temporal feature learning
-* Synthetic EEG augmentation
-
-### GAN Architecture
-
-#### Generator
-
-The generator:
-
-* takes latent noise vectors
-* generates synthetic EEG windows
-* uses fully connected layers with BatchNorm and LeakyReLU
-
-#### Critic
-
-The critic:
-
-* distinguishes real vs synthetic EEG
-* uses LayerNorm for stability
-* estimates Wasserstein distance
-
-### Training Observations
-
-Healthy GAN training showed:
-
-```text
-W-distance increasing and stabilizing positively
-```
-
-Example:
-
-```text
 Epoch 300/300
 W-dist = +38.44
 ```
 
-This indicates stable adversarial learning.
+Synthetic recordings are reconstructed from generated windows into continuous
+signals and saved in `.xlsx` format using the convention:
 
----
-
-## `generate_synthetic.py`
-
-This file:
-
-* loads the trained GAN generator
-* generates synthetic EEG recordings
-* reconstructs EEG windows into continuous signals
-* saves synthetic EEG files in `.xlsx` format
-
-### Output Structure
-
-```text
-Synthetic Dataset/
-├── Subject 1/
-│   ├── Right/
-│   ├── Left/
-│   ├── Forward/
-│   └── Backward/
 ```
-
-### Naming Convention
-
-Synthetic files are stored as:
-
-```text
 originalfilename_subject_synthetic_number.xlsx
 ```
 
-Example:
+### 3.4 Sequence Generation
 
-```text
-ARROW_Right_Subject1_synthetic_25.xlsx
+Filtered EEG signals were segmented into overlapping windows for temporal learning.
+
+| Parameter        | Value |
+| ---------------- | ----- |
+| Sequence length  | 256   |
+| Stride           | 128   |
+
+### 3.5 LSTM Classifier
+
+A two-layer LSTM network was trained on the normalized sequences for four-class
+classification.
+
+**Architecture:**
+
 ```
+Input
+  │
+  ▼
+LSTM Layer 1
+  │
+  ▼
+LSTM Layer 2
+  │
+  ▼
+Fully Connected Layer
+  │
+  ▼
+Softmax (4 classes)
+```
+
+Dropout regularization was applied to mitigate overfitting.
+
+**Class labels:**
+
+| Label | Class    |
+| ----- | -------- |
+| 0     | Right    |
+| 1     | Left     |
+| 2     | Forward  |
+| 3     | Backward |
 
 ---
 
-# 3. Filtering Files
+## 4. Results
 
-## `chebyshev_filter.py`
+The final trained model achieved the following performance:
 
-This file performs EEG signal preprocessing using a Chebyshev Type-I Bandpass Filter.
+| Metric              | Value   |
+| ------------------- | ------- |
+| Train Accuracy      | 95.41%  |
+| Test Accuracy       | 95.72%  |
 
-### Purpose
-
-The filter removes:
-
-* low-frequency drift
-* high-frequency noise
-* unwanted artifacts
-
-while preserving EEG frequency bands relevant to cognitive activity.
-
-### Filter Parameters
-
-```python
-fs = 250
-lowcut = 8
-highcut = 30
-order = 4
-rp = 0.5
-```
-
-### Frequency Range
-
-The filter preserves:
-
-```text
-8 Hz – 30 Hz
-```
-
-which covers:
-
-* Alpha waves
-* Beta waves
-
-important for motor imagery and directional EEG analysis.
-
-### Output Structure
-
-```text
-Chebyshev Filtered Data/
-├── Right/
-├── Left/
-├── Forward/
-└── Backward/
-```
-
-### Output Naming
-
-```text
-chebyshev_originalfilename.xlsx
-```
-
-Example:
-
-```text
-chebyshev_ARROW_Right.xlsx
-```
+The close gap between training and test accuracy suggests good generalization
+across the held-out evaluation set.
 
 ---
 
-# 4. LSTM Training File
+## 5. Implementation
 
-## `train_lstm.py`
+### 5.1 Repository Structure
 
-This file trains an LSTM-based deep learning model for EEG direction classification.
-
-### Input
-
-The model receives:
-
-* filtered EEG sequences
-* normalized temporal EEG windows
-
-### Sequence Parameters
-
-```python
-SEQUENCE_LENGTH = 256
-STRIDE = 128
+```
+IEM-IIT_HCI_Project/
+│
+├── Dataset/
+├── Synthetic Dataset/
+├── Chebyshev Filtered Data/
+│
+├── Filtering/
+│   └── chebyshev_filter.py
+│
+├── GAN/
+│   ├── train_wgan_gp.py
+│   └── generate_synthetic.py
+│
+├── LSTM/
+│   └── lstm-eeg-sequence-classification.ipynb
+│
+├── Models/
+│   └── eeg_lstm_model.pth
+│
+├── Results/
+│   ├── accuracy_plot.png
+│   └── confusion_matrix.png
+│
+├── requirements.txt
+└── README.md
 ```
 
-### LSTM Architecture
+### 5.2 Component Summary
 
-```text
-Input Layer
-→ 2-Layer LSTM
-→ Fully Connected Layers
-→ Softmax Output
-```
+| Module                          | Function                              |
+| ------------------------------- | ------------------------------------- |
+| `chebyshev_filter.py`           | EEG noise removal and band selection  |
+| `train_wgan_gp.py`              | Synthetic EEG generation training     |
+| `generate_synthetic.py`         | Synthetic EEG inference and export    |
+| `lstm-eeg-sequence-classification.ipynb` | LSTM training and evaluation |
 
-### Model Features
+### 5.3 Technologies
 
-* Temporal EEG learning
-* Sequential pattern extraction
-* Multi-class classification
-* Regularization using Dropout
+Python, PyTorch, NumPy, Pandas, Scikit-learn, SciPy, Matplotlib, OpenPyXL.
 
-### Classes
+### 5.4 Training Environment
 
-```text
-0 → Right
-1 → Left
-2 → Forward
-3 → Backward
-```
+Training was carried out on Kaggle GPU and Google Colab environments using
+Tesla T4 accelerators, with CPU fallback where required.
 
 ---
 
-# Training Results
+## 6. Limitations and Future Work
 
-Final Results:
+The current implementation uses sequence-level train-test splitting, which can
+introduce mild leakage between adjacent windows drawn from the same recording.
+For research-grade evaluation, file-level splitting is recommended.
 
-```text
-Final Train Accuracy : 95.41%
-Final Test Accuracy  : 95.72%
-```
+**Planned extensions:**
 
-The model successfully learned temporal EEG patterns for directional classification.
-
----
-
-# Performance Summary
-
-| Component           | Purpose                      |
-| ------------------- | ---------------------------- |
-| Chebyshev Filter    | EEG Noise Removal            |
-| WGAN-GP             | Synthetic EEG Generation     |
-| Sequence Generator  | Temporal EEG Window Creation |
-| LSTM                | EEG Direction Classification |
-| Accuracy Evaluation | Performance Measurement      |
+- File-level train-test splitting to eliminate sequence leakage
+- Bidirectional LSTM and CNN-LSTM hybrid architectures
+- Transformer-based EEG classifiers with self-attention
+- Inclusion of additional EEG channels
+- Attention mechanisms over temporal sequences
+- Real-time inference pipeline for online BCI applications
 
 ---
 
-# Technologies Used
+## 7. Conclusion
 
-* Python
-* PyTorch
-* NumPy
-* Pandas
-* Scikit-learn
-* SciPy
-* Matplotlib
-* OpenPyXL
-* Kaggle GPU
-* Google Colab
-
----
-
-# Hardware and Training Environment
-
-The project was trained using:
-
-* Kaggle GPU environment
-* Google Colab
-* Tesla T4 / CPU environment
-
----
-
-# Future Improvements
-
-Possible future enhancements:
-
-* Bidirectional LSTM
-* CNN-LSTM Hybrid Models
-* Transformer-based EEG Classification
-* File-level train-test splitting
-* Real-time EEG classification
-* Attention mechanisms
-* More EEG channels
-
----
-
-# Research Notes
-
-The current implementation uses sequence-level train-test splitting.
-
-For research-grade evaluation, future work should use:
-
-```text
-File-level splitting
-```
-
-to avoid sequence leakage between train and test datasets.
-
----
-
-# Results
-
-The project demonstrates:
-
-* successful EEG preprocessing
-* stable GAN training
-* synthetic EEG generation
-* high-accuracy temporal EEG classification
-* end-to-end EEG deep learning workflow
-
----
-
-# Author
-
-Developed by Alekhya Gangopadhyay as part of the IEM-IIT HCI Project.
+The proposed pipeline demonstrates that combining classical EEG preprocessing,
+GAN-based data augmentation, and temporal sequence modeling yields a robust
+framework for directional intent classification. The achieved test accuracy of
+95.72% supports the viability of this approach for downstream BCI applications,
+with clear pathways for further improvement through stricter evaluation protocols
+and architectural extensions.
