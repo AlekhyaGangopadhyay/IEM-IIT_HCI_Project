@@ -98,7 +98,7 @@ IEM-IIT_HCI_Project/
 │   ├── chebyshev_filter.py
 │
 ├── LSTM/
-│   ├── train_lstm.py
+│   ├── lstm-eeg-sequence-classification.ipynb
 │
 ├── Models/
 │   ├── eeg_lstm_model.pth
