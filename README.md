@@ -59,10 +59,10 @@ The framework processes raw multi-channel signals and performs inference through
                ▼
 ┌──────────────────────────────┐
 │   Dual-Output System Head    │
-├──────────────────────────────┴──────────────────────────────┐
+├──────────────────────────────┴────────────────────────────────┐
 │ 1. Principal Outbound Action ──► Majority Mode Voting (Safety)│
-│ 2. Closing Timeline Logic    ──► Real-Time Terminal Trigger │
-└─────────────────────────────────────────────────────────────┘
+│ 2. Closing Timeline Logic    ──► Real-Time Terminal Trigger   │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ---
