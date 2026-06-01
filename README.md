@@ -21,39 +21,66 @@ A deep learning framework for classifying directional movement intent from non-i
 
 ## Pipeline Architecture
 
-The framework processes raw multi-channel signals and performs inference through the following systematic sequence:
+The framework follows two distinct flows: an **offline training pipeline** (raw data → augmentation → filtering → sequencing → model fitting) and a **live inference pipeline** (new recording → calibration → classification). Note that generative augmentation runs first on the *raw* dataset, and Chebyshev filtering is then applied to the synthetic output — i.e. the order is **WGAN-GP → Chebyshev**, not the reverse.
+
+### Offline Training Pipeline
 
 ```
-[ Raw Excel / Live EEG Stream ]
+[ Raw Excel EEG Recordings ]
                │
                ▼
 ┌──────────────────────────────┐
-│  Bipolar Channel Isolation   │ ──► Extracts: ['P4 - O2', 'P3 - O1', 'F4 - C4']
+│  WGAN-GP Generative Stage    │ ──► Trains per-file on raw (all-channel) signals and
+│                              │     synthesizes realistic EEG trials for augmentation
+└──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│ Chebyshev Bandpass Filter    │ ──► Applied to synthetic output; isolates the
+│                              │     mu/beta sensorimotor band (8 - 30 Hz)
+└──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  Bipolar Channel Isolation   │ ──► Selects: ['P4 - O2', 'P3 - O1', 'F4 - C4']
+└──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│ Sequence Generation & Scale  │ ──► Slices into 256-step windows & scales globally
+└──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  Spatial-Temporal Classifier │ ──► Trains 1D-CNN / ConvLSTM
+└──────────────────────────────┘
+```
+
+### Live Inference Pipeline
+
+```
+[ Live EEG Stream / Uploaded Excel ]
+               │
+               ▼
+┌──────────────────────────────┐
+│  Bipolar Channel Isolation   │ ──► Selects: ['P4 - O2', 'P3 - O1', 'F4 - C4']
 └──────────────────────────────┘
                │
                ▼
 ┌──────────────────────────────┐
 │  Linear Trend Detrending     │ ──► Removes DC offset & electrode drift noise
+│                              │     (inference-only calibration step)
 └──────────────────────────────┘
                │
                ▼
 ┌──────────────────────────────┐
-│ Chebyshev Bandpass Filter    │ ──► Isolates alpha and beta bands (8 - 30 Hz)
+│  Adaptive / Global Scaling   │ ──► 1D-CNN: per-session stats; ConvLSTM: fixed
+│                              │     global training scalars (see Calibration)
 └──────────────────────────────┘
                │
                ▼
 ┌──────────────────────────────┐
-│  WGAN-GP Generative Stage    │ ──► Synthesizes realistic EEG trials for augmentation
-└──────────────────────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│ Sequence Generation & Scale  │ ──► Slices into 255-step windows & scales globally
-└──────────────────────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│  Spatial-Temporal Classifier │ ──► Evaluates sequences via 1D-CNN / ConvLSTM
+│  Spatial-Temporal Classifier │ ──► Evaluates 255-step windows via 1D-CNN / ConvLSTM
 └──────────────────────────────┘
                │
                ▼
@@ -185,11 +212,13 @@ To prevent data leakage during temporal windowing, we split our data at the **fi
 * **Test Set (20% of files)**: Left out completely during windowing, normalization fitting, and training to ensure unbiased evaluation.
 
 ### Sequential Windowing and Global Normalization
-Signals are segmented into distinct, fixed-size temporal windows of 255 timesteps (File Sequencing). We apply a global normalization scheme where a single `StandardScaler` is fitted on the training set and applied to the test set:
+Signals are segmented into distinct, fixed-size temporal windows of **256 timesteps** (`SEQUENCE_LENGTH = 256` in `src/filesequenicng.py`). We apply a global normalization scheme where a single `StandardScaler` is fitted on the training set and applied to the test set:
 
 $$x_{\text{normalized}} = \frac{x - \mu_{\text{global}}}{\sigma_{\text{global}}}$$
 
-The compiled data is saved as high-performance NumPy arrays: `X_train_500.npy`, `X_test_500.npy`, `y_train_500.npy`, and `y_test_500.npy`.
+The compiled feature arrays are saved as high-performance NumPy files: `X_train_500.npy` and `X_test_500.npy`. The corresponding label arrays consumed by the classifier scripts are `y_train_cls_500.npy` and `y_test_cls_500.npy`.
+
+> **Note on window length:** Training sequences are 256 timesteps, while the live-inference scripts reshape incoming recordings into **255-timestep** windows (`EXPECTED_TIMESTEPS = 255`). Because both classifiers reduce the temporal axis via `AdaptiveAvgPool1d` (1D-CNN) or the LSTM's final hidden state (ConvLSTM), they accept either length without modification, but the off-by-one is intentional to flag here rather than implied to be identical.
 
 ---
 
@@ -201,7 +230,7 @@ We implement and evaluate two principal spatial-temporal network backbones:
 This model extracts spatial-temporal features directly through nested 1D convolutional layers, bypasses recurrent connections, and achieves fast inference times.
 
 ```
-Input Tensor (Batch, 255, 3) ──► Transpose to (Batch, 3, 255)
+Input Tensor (Batch, 256, 3) ──► Transpose to (Batch, 3, 256)
                                       │
                                       ▼
                                [ Conv1D Block 1 ]
@@ -228,7 +257,7 @@ Input Tensor (Batch, 255, 3) ──► Transpose to (Batch, 3, 255)
 This architecture combines 1D convolutions for spatial feature extraction with a multi-layer Long Short-Term Memory (LSTM) network to track temporal sequence dynamics.
 
 ```
-Input Tensor (Batch, 255, 3) ──► Transpose to (Batch, 3, 255)
+Input Tensor (Batch, 256, 3) ──► Transpose to (Batch, 3, 256)
                                       │
                                       ▼
                                [ Conv1D Feature Map ]
@@ -257,13 +286,19 @@ Input Tensor (Batch, 255, 3) ──► Transpose to (Batch, 3, 255)
 ## Adaptive Calibration and Simulated Inference
 
 ### Detrending and Impedance Compensation
-During deployment, variations in scalp contact impedance introduce significant DC offset shifts and electrode drift. This causes standard classifiers to collapse, often predicting a single class (such as "Forward") continuously. To counter this, we implement a real-time calibration engine (`tests/1D_CNN_test.py` and `tests/conv_LSTM_test.py`):
-1. **Detrending**: A linear least-squares detrending operator is applied to eliminate session-specific microvolt drift across each temporal window.
-2. **Adaptive Scaling**: Rather than relying solely on training scale boundaries, the engine dynamically estimates the active session's statistics to normalize the incoming window block:
+During deployment, variations in scalp contact impedance introduce significant DC offset shifts and electrode drift. This causes standard classifiers to collapse, often predicting a single class (such as "Forward") continuously. To counter this, both inference scripts first apply **detrending** — a linear least-squares detrending operator that eliminates session-specific microvolt drift across each temporal window. They then diverge in how they normalize, providing two complementary calibration strategies:
+
+1. **Adaptive Per-Session Scaling (`tests/1D_CNN_test.py`)**: Rather than relying on training scale boundaries, this engine dynamically estimates the active session's own statistics to normalize the incoming window block:
 
 $$X_{\text{calibrated}} = \frac{X_{\text{eval}} - \mu_{\text{session}}}{\sigma_{\text{session}}}$$
 
-This calibration stabilizes the model's feature space, maintaining class balance even under changing noise conditions.
+This stabilizes the feature space and maintains class balance even under changing noise conditions, at the cost of assuming the session is class-balanced.
+
+2. **Fixed Global Scalars (`tests/conv_LSTM_test.py`)**: This engine instead normalizes against precomputed global training statistics, preserving the absolute scale the model was trained on:
+
+$$X_{\text{calibrated}} = \frac{X_{\text{eval}} - \mu_{\text{global}}}{\sigma_{\text{global}}}$$
+
+where `GLOBAL_TRAIN_MEAN` and `GLOBAL_TRAIN_STD` are hardcoded baseline vectors representing the preprocessed training distribution.
 
 ### Dual-Output Decision Logic
 During testing and live inference, the framework segments the EEG data stream using File Sequencing (generating distinct, fixed-size window matrices, such as the 255-timestep sequences). The framework outputs two key decision metrics:
@@ -281,7 +316,7 @@ If $\text{Margin} < 15\%$, the output is flagged as `⚠️ SHIFTING` due to hig
 
 ## Experimental Results
 
-The models were trained and validated using PyTorch on NVIDIA Tesla T4 graphics accelerators. By employing File Sequencing (segmenting continuous data into distinct, fixed-size window matrices of 255-timestep blocks) alongside a rigorous file-level split, we obtained the following generalization performance:
+The models were trained and validated using PyTorch on NVIDIA Tesla T4 graphics accelerators. By employing File Sequencing (segmenting continuous data into distinct, fixed-size window matrices of 256-timestep blocks) alongside a rigorous file-level split, we obtained the following generalization performance:
 
 | Classifier Model | Training Accuracy | Test Accuracy | Generalization Gap |
 |---|---|---|---|
