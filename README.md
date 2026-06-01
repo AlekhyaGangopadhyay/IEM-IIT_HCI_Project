@@ -137,12 +137,14 @@ The filter settings are summarized below:
 | Preprocessing Parameter | Configured Value |
 |---|---|
 | Sampling Rate ($f_s$) | 250 Hz |
-| Lower Cutoff Frequency | 8 Hz (Alpha band boundary) |
-| Upper Cutoff Frequency | 30 Hz (Beta band boundary) |
+| Lower Cutoff Frequency | 8 Hz (mu / sensorimotor band lower boundary) |
+| Upper Cutoff Frequency | 30 Hz (beta band upper boundary) |
 | Filter Order ($N$) | 6 (Highly selective transition) |
 | Passband Ripple ($g_p$) | 0.3 dB |
 
 This specific passband (8–30 Hz) isolates sensorimotor rhythms—specifically the event-related desynchronization (ERD) and event-related synchronization (ERS) patterns that occur during motor imagery.
+
+> **Note on usage:** `src/chebyshev_filtering.py` filters a **single class folder per run** — `INPUT_FOLDER` and `OUTPUT_FOLDER` are hardcoded (e.g. the `Right` class). To filter the full dataset, re-run the script once per directional class (Right, Left, Forward, Backward), updating the two path constants each time, or wrap the existing loop in an outer loop over the class folders.
 
 ---
 
@@ -153,6 +155,8 @@ Supervised deep learning models trained on small EEG datasets struggle to genera
 
 ### Generator and Critic Network Architectures
 To stabilize training and avoid mode collapse, we use the Wasserstein distance with a 1-Lipschitz constraint enforced via a gradient penalty.
+
+> **Note on channel count:** The WGAN-GP operates on **all channels present in each raw recording** (`n_channels = signal.shape[1]`, set dynamically per file in `src/Synthetic Data Creation*.py`), not on a fixed set of 3. The reduction to the three bipolar channels (`P4 - O2`, `P3 - O1`, `F4 - C4`) happens *later*, during dataset sequencing — after Chebyshev filtering. The diagrams below use `C` to denote this dynamic channel dimension.
 
 #### Generator Structure
 Accepts a 100-dimensional latent noise vector and generates multi-channel sequences:
@@ -169,13 +173,13 @@ Latent z (100) ──► Fully Connected (256 * 16) ──► Reshape (256, 16)
                ConvTranspose1d (64  ──► 32,  Kernel=4, Stride=2, Pad=1) + BatchNorm + ReLU
                       │
                       ▼
-               Conv1d (32 ──► 3 Channels, Kernel=3, Pad=1) ──► Synthetic Window (3, 128)
+               Conv1d (32 ──► C Channels, Kernel=3, Pad=1) ──► Synthetic Window (C, 128)
 ```
 
 #### Critic Structure
 Evaluates real or synthetic sequences and estimates the Wasserstein distance:
 ```
-Input (3, 128) ──► Conv1d (3 ──► 32, Kernel=4, Stride=2, Pad=1) + LeakyReLU(0.2)
+Input (C, 128) ──► Conv1d (C ──► 32, Kernel=4, Stride=2, Pad=1) + LeakyReLU(0.2)
                       │
                       ▼
                Conv1d (32 ──► 64, Kernel=4, Stride=2, Pad=1) + LeakyReLU(0.2)
@@ -224,7 +228,7 @@ The compiled feature arrays are saved as high-performance NumPy files: `X_train_
 
 ## Classifier Architectures
 
-We implement and evaluate two principal spatial-temporal network backbones:
+We implement and evaluate two principal spatial-temporal network backbones as packaged source scripts (`src/1d-cnn-model.py` and `src/convlstm.py`). A third, pure-LSTM baseline was also explored — its training notebook (`notebooks/experiments/lstm-eeg-sequence-classification.ipynb`), saved weights (`models/eeg_lstm_model.pth`), and result plots (`results/LSTM_*`) are included — but it has no corresponding `src/` script and is reported here only as a reference baseline.
 
 ### Pure 1D-CNN Classifier
 This model extracts spatial-temporal features directly through nested 1D convolutional layers, bypasses recurrent connections, and achieves fast inference times.
