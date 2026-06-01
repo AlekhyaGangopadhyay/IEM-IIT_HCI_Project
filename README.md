@@ -37,6 +37,7 @@ EEG recordings were collected subject-wise and organized by directional task. Ea
 direction folder contains multiple multichannel EEG recordings stored as `.xlsx`
 files.
 
+
 **Classes:** Right, Left, Forward, Backward
 
 **Dataset structure:**
@@ -273,3 +274,132 @@ framework for directional intent classification. The achieved test accuracy of
 95.72% supports the viability of this approach for downstream BCI applications,
 with clear pathways for further improvement through stricter evaluation protocols
 and architectural extensions.
+
+
+
+```
+EEG processing and inference pipeline:
+```
+Here is the structured flowchart of your end-to-end EEG processing and inference pipeline:
+
+```
+[ Raw Excel / Live EEG Stream ]
+               │
+               ▼
+┌──────────────────────────────┐
+│  Bipolar Channel Isolation   │ ──► Extracts ['P4 - O2', 'P3 - O1', 'F4 - C4']
+└──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  Linear Trend Detrending     │ ──► Removes DC offset & electrode drift noise
+└──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  Adaptive Session Scaling    │ ──► Z-score Normalization: (X - session_mean) / session_std
+└──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│     Matrix Segmentation      │ ──► Slices continuous stream into 255-timestep blocks
+└──────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│     Deep Learning Core       │ ──► Evaluates tensors via Trained 1D-CNN / ConvLSTM
+└──────────────────────────────┘
+               │
+               ▼
+       [ Dual-Output Head ]
+               │
+               ├─► [ Principal Outbound Action ] ──► Majority Mode Voting (Safety Filter)
+               │
+               └─► [ Closing Timeline Logic ] ─────► Terminal Window Tracker (Real-Time Trigger)
+
+```
+```
+End-to-End Data Processing Pipeline
+[ Raw Excel / EEG Streams ] 
+             │
+             ▼
+[ Bipolar Channel Isolation ] ───► Extracted: ['P4-O2', 'P3-O1', 'F4-C4']
+             │
+             ▼
+[ Linear Trend Detrending ] ────► Removes microvolt DC offset and electrode drift
+             │
+             ▼
+[ Adaptive Session Scaling ] ───► Z-Score Normalization: (X - μ) / σ
+             │
+             ▼
+[ Matrix Segmentation ] ────────► Divided into continuous windows of 255 timesteps
+             │
+             ▼
+[ Binary File Compilation ] ────► Exported to high-performance X_train_500.npy
+
+```
+
+Detailed Architectural Descriptions
+
+
+Pure 1D-CNN Classifier
+```
+Input Tensor: (Batch, 255 Timesteps, 3 Channels)
+                             │
+                             ▼
+     [ Conv1D Block 1 ] ───► 64 Filters, Kernel=7, Padding=3, ReLU
+                             │
+                             ▼
+     [ Regularization ] ───► BatchNorm1D + MaxPool1D (Size=2) + Dropout (0.3)
+                             │
+                             ▼
+     [ Conv1D Block 2 ] ───► 128 Filters, Kernel=5, Padding=2, ReLU
+                             │
+                             ▼
+     [ Regularization ] ───► BatchNorm1D + MaxPool1D (Size=2) + Dropout (0.3)
+                             │
+                             ▼
+     [ Conv1D Block 3 ] ───► 256 Filters, Kernel=3, Padding=1, ReLU
+                             │
+                             ▼
+     [ Pooling Layer ]  ───► AdaptiveAvgPool1D(1) -> Flattens to Vector of 256
+                             │
+                             ▼
+     [ Dense Head 1 ]   ───► Linear(256 -> 64) + ReLU + BatchNorm1D + Dropout(0.4)
+                             │
+                             ▼
+     [ Output Layer ]   ───► Linear(64 -> 4 Classes) -> Softmax Probabilities
+```
+
+]ConvLSTM Hybrid Classifier
+
+```
+Input Tensor: (Batch, 255 Timesteps, 3 Channels)
+                             │
+                             ▼
+   [ Transpose Operation ] ─► Reshaped to (Batch, 3 Channels, 255 Timesteps)
+                             │
+                             ▼
+   [ Spatial-Temporal CNN ] ─► Conv1D(3->64, K=5) + ReLU + BatchNorm + MaxPool1D
+                             │
+                             ▼
+   [ Latent Feature Map ]  ─► Conv1D(64->64, K=3) + ReLU + BatchNorm
+                             │
+                             ▼
+   [ Sequence Alignment ]  ─► Reshaped back to (Batch, Reduced_Timesteps, 64)
+                             │
+                             ▼
+   [ Recurrent Stage 1 ]   ─► LSTM Hidden Layer 1 (Dim=128, Batch_First=True)
+                             │
+                             ▼
+   [ Recurrent Stage 2 ]   ─► LSTM Hidden Layer 2 (Dim=128) + Internal Dropout(0.4)
+                             │
+                             ▼
+   [ Hidden State Extraction]► Extract final hidden vector h_t from Last Step
+                             │
+                             ▼
+   [ Dense Classifier Head ]─► Linear(128 -> 64) + ReLU + BatchNorm + Dropout(0.4)
+                             │
+                             ▼
+   [ Output Dispatch ]     ─► Linear(64 -> 4 Classes) -> Softmax Drive
+```
