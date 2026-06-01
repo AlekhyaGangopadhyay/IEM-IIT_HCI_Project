@@ -1,0 +1,9 @@
+.venv/
+__remote_tmp/
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
