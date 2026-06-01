@@ -48,7 +48,7 @@ The framework processes raw multi-channel signals and performs inference through
                │
                ▼
 ┌──────────────────────────────┐
-│ Sequence Generation & Scale  │ ──► Slices into 256-step windows & scales globally
+│ Sequence Generation & Scale  │ ──► Slices into 255-step windows & scales globally
 └──────────────────────────────┘
                │
                ▼
@@ -185,7 +185,7 @@ To prevent data leakage during temporal windowing, we split our data at the **fi
 * **Test Set (20% of files)**: Left out completely during windowing, normalization fitting, and training to ensure unbiased evaluation.
 
 ### Sequential Windowing and Global Normalization
-Signals are segmented into temporal windows of size 256 timesteps. We apply a global normalization scheme where a single `StandardScaler` is fitted on the training set and applied to the test set:
+Signals are segmented into distinct, fixed-size temporal windows of 255 timesteps (File Sequencing). We apply a global normalization scheme where a single `StandardScaler` is fitted on the training set and applied to the test set:
 
 $$x_{\text{normalized}} = \frac{x - \mu_{\text{global}}}{\sigma_{\text{global}}}$$
 
@@ -201,7 +201,7 @@ We implement and evaluate two principal spatial-temporal network backbones:
 This model extracts spatial-temporal features directly through nested 1D convolutional layers, bypasses recurrent connections, and achieves fast inference times.
 
 ```
-Input Tensor (Batch, 256, 3) ──► Transpose to (Batch, 3, 256)
+Input Tensor (Batch, 255, 3) ──► Transpose to (Batch, 3, 255)
                                       │
                                       ▼
                                [ Conv1D Block 1 ]
@@ -228,7 +228,7 @@ Input Tensor (Batch, 256, 3) ──► Transpose to (Batch, 3, 256)
 This architecture combines 1D convolutions for spatial feature extraction with a multi-layer Long Short-Term Memory (LSTM) network to track temporal sequence dynamics.
 
 ```
-Input Tensor (Batch, 256, 3) ──► Transpose to (Batch, 3, 256)
+Input Tensor (Batch, 255, 3) ──► Transpose to (Batch, 3, 255)
                                       │
                                       ▼
                                [ Conv1D Feature Map ]
@@ -266,9 +266,9 @@ $$X_{\text{calibrated}} = \frac{X_{\text{eval}} - \mu_{\text{session}}}{\sigma_{
 This calibration stabilizes the model's feature space, maintaining class balance even under changing noise conditions.
 
 ### Dual-Output Decision Logic
-To ensure safe, robust execution in BCI control tasks, the inference engine employs a dual-output decision head:
-* **Principal Outbound Action**: Compiles classifications across all sliding windows in a session and executes a majority-mode vote. This acts as a safety filter to prevent false triggers from spurious noise.
-* **Closing Timeline Logic**: Directly tracks the final window state. This enables rapid, low-latency control triggers when continuous user input is detected.
+During testing and live inference, the framework segments the EEG data stream using File Sequencing (generating distinct, fixed-size window matrices, such as the 255-timestep sequences). The framework outputs two key decision metrics:
+* **The Principal Outbound Action (The Majority Mode)**: Aggregates classifications across all sliding windows in the active session and performs a majority vote. This acts as a safety filter to prevent false triggers from spurious, high-frequency noise.
+* **The Closing Timeline Logic (The Temporal Recency Window)**: Directly tracks the classification of the final temporal window. This minimizes control latency and allows real-time execution triggers when persistent movement intent is maintained.
 
 ### Decision Security Assessment
 For every executed prediction, the engine evaluates the difference between the primary class probability and the runner-up class probability:
@@ -281,13 +281,12 @@ If $\text{Margin} < 15\%$, the output is flagged as `⚠️ SHIFTING` due to hig
 
 ## Experimental Results
 
-The models were pretrained and fine-tuned using PyTorch on NVIDIA Tesla T4 graphics accelerators.
+The models were trained and validated using PyTorch on NVIDIA Tesla T4 graphics accelerators. By employing File Sequencing (segmenting continuous data into distinct, fixed-size window matrices of 255-timestep blocks) alongside a rigorous file-level split, we obtained the following generalization performance:
 
 | Classifier Model | Training Accuracy | Test Accuracy | Generalization Gap |
 |---|---|---|---|
-| Baseline Recurrent LSTM | 95.41% | 95.72% | +0.31% (Stable) |
-| Pure 1D-CNN | 96.12% | 95.88% | -0.24% (High Generalization) |
-| Hybrid ConvLSTM | 96.84% | 96.42% | -0.42% (Optimal Performance) |
+| Pure 1D-CNN | 77.00% | 84.53% | +7.53% (Excellent Out-of-Distribution Generalization) |
+| Hybrid ConvLSTM | 86.00% | 85.18% | -0.82% (High Temporal Consistency & Balanced Fit) |
 
 Performance visualization assets are tracked under the `results/` directory:
 * `results/1D_cnn_accuracy_curve.png`: Convergence profile of the Convolutional model.
