@@ -35,8 +35,6 @@
 #
 # ============================================================
 
-!pip install openpyxl -q
-!pip install tenacity -q
 
 import os
 import time
