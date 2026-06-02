@@ -22,7 +22,6 @@ for folder, count in leaf_folder_file_counts.items():
     print(f"  {folder}: {count} files")
 
 
-!pip install openpyxl scipy -q
 
 import os
 import numpy as np
