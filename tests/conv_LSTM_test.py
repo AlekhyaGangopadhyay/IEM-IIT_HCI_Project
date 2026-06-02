@@ -54,8 +54,8 @@ class EEG_ConvLSTM_Classifier(nn.Module):
 # ============================================================
 
 WORKSPACE_DIR = r"d:\EEG"
-NEW_UPLOADED_EXCEL = os.path.join(WORKSPACE_DIR, "D:\\EEG\\LE.xlsx")
-MODEL_WEIGHTS_PATH = os.path.join(WORKSPACE_DIR, "EEG_ConvLSTM_classifier.pth")
+NEW_UPLOADED_EXCEL = os.path.join(WORKSPACE_DIR, "data_for_testing", "raw", "LE.xlsx")
+MODEL_WEIGHTS_PATH = os.path.join(WORKSPACE_DIR, "models", "EEG_ConvLSTM_classifier.pth")
 
 SELECTED_CHANNELS = ["P4 - O2", "P3 - O1", "F4 - C4"]
 EXPECTED_TIMESTEPS = 255 
