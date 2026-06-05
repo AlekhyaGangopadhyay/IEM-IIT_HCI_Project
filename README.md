@@ -354,24 +354,8 @@ The proposed adaptive calibration pipeline:
 
 ---
 
-## 9. Citation & References
 
-If you use this research, please cite:
-```
-Gangopadhyay, A., et al. (2026). Adaptive Cross-Session EEG Calibration 
-for Motor Imagery Classification. [Under Review].
-```
 
-For a comprehensive reference list, see the project's citations collection.
-
----
-
-## 10. Contact & Support
-
-For questions, issues, or collaboration inquiries, please contact the research team 
-through the GitHub repository: [IEM-IIT_HCI_Project](https://github.com/AlekhyaGangopadhyay/IEM-IIT_HCI_Project)
-
----
 
 **Last Updated:** June 5, 2026  
 **Status:** Phase 6 in progress | Phases 1-5 complete
@@ -416,17 +400,3 @@ Outputs: `evaluation/results/RESULTS_TABLES.md`
 
 ---
 
-## 6. Workflow Status
-
-All six research phases have been initialized and progressed as follows:
-
-| Phase | Description | Status | Code Files |
-|-------|-------------|--------|-----------|
-| **Phase 1** | Dataset Conditioning (Bipolar, Chebyshev) | **DONE** | `src/chebyshev_filtering.py` |
-| **Phase 2** | Data Augmentation (WGAN-GP, OLA) | **DONE** | `src/Synthetic Data Creation.py` |
-| **Phase 3** | Classifier Training (1D-CNN, ConvLSTM) | **DONE** | `src/1d-cnn-model.py`, `src/convlstm.py` |
-| **Phase 4** | Comparative Benchmarking (Static vs Adaptive) | **DONE** | `src/benchmarking.py` |
-| **Phase 5** | Safety Filtering & Decision Fusion | **DONE** | `tests/1D_CNN_test.py` |
-| **Phase 6** | Scientific Validation & Manuscript | **IN PROGRESS** | `results/phase6_paper_draft.md` |
-
-For detailed phase-by-phase status, see [workflow_status.md](workflow_status.md).
