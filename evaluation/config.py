@@ -30,7 +30,7 @@ LOWCUT, HIGHCUT, ORDER, RP = 8, 30, 6, 0.3
 SELECTED_CHANNELS = ["P4 - O2", "P3 - O1", "F4 - C4"]
 N_CHANNELS = 3
 N_CLASSES = 4
-TRAIN_SEQ_LEN = 256          # offline sequence length used in training
+TRAIN_SEQ_LEN = 255          # offline sequence length used in training
 XSESSION_TIMESTEPS = 255     # window length used by benchmarking.py
 DIRECTION_MAP = {0: "Right", 1: "Left", 2: "Forward", 3: "Backward"}
 

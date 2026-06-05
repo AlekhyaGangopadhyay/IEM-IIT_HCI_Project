@@ -11,9 +11,9 @@ This report details which phases of the academic research workflow for **Option 
 | **Phase 1** | **Dataset Conditioning** (Bipolar, Chebyshev) | **DONE** | [chebyshev_filtering.py](file:///d:/EEG/src/chebyshev_filtering.py) |
 | **Phase 2** | **Data Augmentation** (WGAN-GP, OLA) | **DONE** | [Synthetic Data Creation.py](file:///d:/EEG/src/Synthetic%20Data%20Creation.py) |
 | **Phase 3** | **Classifier Training** (1D-CNN, ConvLSTM) | **DONE** | [filesequenicng.py](file:///d:/EEG/src/filesequenicng.py), [1d-cnn-model.py](file:///d:/EEG/src/1d-cnn-model.py), [convlstm.py](file:///d:/EEG/src/convlstm.py) |
-| **Phase 4** | **Comparative Benchmarking** (Static vs. Adaptive) | **NOT DONE** | Helper written at [run_benchmark.py](file:///C:/Users/iamal/.gemini/antigravity/brain/cd57b0df-3260-4e3e-b5d4-f19782159e4a/scratch/run_benchmark.py) (Awaiting Execution) |
-| **Phase 5** | **Safety Filtering & Decision Fusion** (Logic/Voting) | **LOGIC DONE / EVALUATION NOT DONE** | [1D_CNN_test.py](file:///d:/EEG/tests/1D_CNN_test.py#L128-L167) |
-| **Phase 6** | **Scientific Validation** (Figures/Drafts) | **NOT DONE** | Awaiting benchmark execution data |
+| **Phase 4** | **Comparative Benchmarking** (Static vs. Adaptive) | **DONE** | [src/benchmarking.py](file:///d:/EEG/src/benchmarking.py) |
+| **Phase 5** | **Safety Filtering & Decision Fusion** (Logic/Voting) | **DONE** | [tests/1D_CNN_test.py](file:///d:/EEG/tests/1D_CNN_test.py) |
+| **Phase 6** | **Scientific Validation** (Figures/Drafts) | **IN PROGRESS** | Results generated in [results/](file:///d:/EEG/results/) |
 
 ---
 
@@ -35,21 +35,18 @@ This report details which phases of the academic research workflow for **Option 
     *   Implementation of the file-level train-test split (80/20) which prevents sequence data leakage.
     *   Training scripts and saved weights (`.pth`) for the Pure 1D-CNN and Hybrid ConvLSTM.
 
-### 4. Comparative Benchmarking (Phase 4) — **NOT DONE**
-*   **Status:** The benchmarking code is written, but the actual execution is pending.
-*   **What needs to be done:**
-    *   Run the benchmarking code over all raw testing files (`LE.xlsx` representing LEFT, `RY.xlsx` representing RIGHT, `For.xlsx` representing FORWARD) under two settings: Condition A (Static Global Scaling) and Condition B (Dynamic Adaptive Standardization).
-    *   Demonstrate the quantitative collapse of Condition A (e.g. how it predicts the same class repeatedly) and how Condition B recovers high accuracy.
+### 4. Comparative Benchmarking (Phase 4) — **DONE**
+*   **Status:** Executed successfully using `src/benchmarking.py` on the raw test sessions.
+*   **Completed:** The static vs adaptive comparison was run on `LE.xlsx`, `RY.xlsx`, and `For.xlsx`.
+*   **Outputs saved:** `results/benchmark_metrics.md`, `results/comparative_confusion_matrices.png`, and `results/trajectory_comparison.png`.
 
-### 5. Safety Filtering (Phase 5) — **LOGIC DONE / EVALUATION NOT DONE**
-*   **Status:** The voting and margin check logic is complete, but the quantitative analysis is missing.
-*   **What needs to be done:**
-    *   Calculate and report the percentage of windows flagged as `⚠️ SHIFTING` during transitions.
-    *   Demonstrate how the safety margin filter prevents false triggers.
+### 5. Safety Filtering (Phase 5) — **DONE**
+*   **Status:** The safety-filtering and decision-fusion logic has been evaluated on `tests/1D_CNN_test.py`.
+*   **Completed:** Adaptive session calibration and the confidence margin check were executed, producing stable vs shifting window labels and a final trajectory decision summary.
 
-### 6. Scientific Validation & Writing (Phase 6) — **NOT DONE**
-*   **What needs to be done:**
-    *   Save side-by-side confusion matrix plots for the paper (Global Scaling vs. Adaptive Calibration).
-    *   Save trajectory path comparison plots showing the predicted class outputs over time.
-    *   Compile results into Markdown tables to export directly to LaTeX/Overleaf.
-    *   Draft the final manuscript text.
+### 6. Scientific Validation & Writing (Phase 6) — **IN PROGRESS**
+*   **Status:** Benchmark figures, trajectory plots, and evaluation tables have been generated.
+*   **Artifacts created:** `results/RESULTS_TABLES.md`, `results/phase6_summary.md`, `results/comparative_confusion_matrices.png`, `results/trajectory_comparison.png`.
+*   **Next steps:**
+    *   Integrate the generated tables and figures into the manuscript.
+    *   Refine the draft narrative and finalize the paper text.

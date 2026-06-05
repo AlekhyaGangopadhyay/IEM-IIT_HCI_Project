@@ -1,0 +1,34 @@
+{
+  "Full pipeline": {
+    "offline": 84.53282828282829,
+    "cross": 33.33333333333333,
+    "shift": 37.03703703703704
+  },
+  "- spectral loss": {
+    "offline": "PENDING",
+    "cross": "PENDING",
+    "shift": "PENDING",
+    "_note": "run train_wgan_no_spectral.py -> build_dataset.py -> train_decoders.py --tag nospec"
+  },
+  "- generative augmentation": {
+    "offline": "PENDING",
+    "cross": "PENDING",
+    "shift": "PENDING",
+    "_note": "build_dataset.py --source originals -> train_decoders.py --tag orig24"
+  },
+  "- linear detrending": {
+    "offline": 84.53282828282829,
+    "cross": 29.629629629629626,
+    "shift": 33.33333333333333
+  },
+  "- adaptive calibration (static)": {
+    "offline": 84.53282828282829,
+    "cross": 29.629629629629626,
+    "shift": 7.4074074074074066
+  },
+  "- safety-margin filter": {
+    "offline": 84.53282828282829,
+    "cross": 33.33333333333333,
+    "shift": "off (no gating)"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "Ours: 1D-CNN + Calib.": {
+    "offline": 84.53282828282829,
+    "cross": 33.33333333333333,
+    "params": 158788,
+    "latency_ms": 1.475
+  },
+  "Ours: ConvLSTM + Calib.": {
+    "offline": 85.18308080808082,
+    "cross": 25.925925925925924,
+    "params": 253700,
+    "latency_ms": 5.428
+  },
+  "EA + 1D-CNN": {
+    "offline": null,
+    "cross": 25.925925925925924,
+    "params": 158788,
+    "latency_ms": 1.273
+  },
+  "CSP + LDA": {
+    "offline": 39.13510101010101,
+    "cross": 37.03703703703704,
+    "params": null,
+    "latency_ms": null
+  },
+  "FBCSP + LDA": {
+    "offline": 43.69318181818182,
+    "cross": 37.03703703703704,
+    "params": null,
+    "latency_ms": null
+  },
+  "EEGNet": {
+    "offline": 49.1729797979798,
+    "cross": 33.33333333333333,
+    "params": 1668,
+    "latency_ms": 1.496
+  }
+}

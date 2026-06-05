@@ -1,0 +1,19 @@
+{
+  "n_pairs_per_file_test": 6,
+  "mean_static_acc": 25.925925925925924,
+  "mean_adaptive_acc": 29.62962962962963,
+  "mean_gain": 3.7037037037037073,
+  "per_file_wilcoxon_static_vs_adaptive": {
+    "statistic": 1.5,
+    "pvalue": 0.375
+  },
+  "rank_biserial_effect_size": 0.8,
+  "bootstrap_95ci_mean_gain": [
+    -3.7037037037037006,
+    9.259259259259268
+  ],
+  "per_window_wilcoxon_cnn": {
+    "statistic": 2.0,
+    "pvalue": 0.5637028616507731
+  }
+}
