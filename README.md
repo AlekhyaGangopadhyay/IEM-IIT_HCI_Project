@@ -275,6 +275,47 @@ Outputs: `evaluation/results/RESULTS_TABLES.md`
 
 ---
 
+- `results/trajectory_comparison.png` — predicted trajectory over time
+
+#### 5.3.2 Statistical Validation
+To run the Wilcoxon signed-rank statistical test:
+```bash
+cd evaluation
+python run_statistics.py
+```
+
+Outputs: `evaluation/results/stats_results.json`
+
+#### 5.3.3 Baseline Comparison
+To evaluate standard ML baselines (CSP, FBCSP, EEGNet, EA):
+```bash
+cd evaluation
+python run_baselines.py
+```
+
+Outputs: `evaluation/results/baselines_results.json`
+
+#### 5.3.4 Ablation Study
+To run the ablation study across all component removals:
+```bash
+cd evaluation
+python run_ablation.py
+```
+
+Outputs: `evaluation/results/ablation_results.json`
+
+#### 5.3.5 Generate Results Tables
+To aggregate all evaluation results into markdown tables:
+```bash
+cd evaluation
+python make_tables.py
+```
+
+Outputs: `evaluation/results/RESULTS_TABLES.md`
+
+---
+
+
 ## 6. Workflow Status
 
 All six research phases have been initialized and progressed as follows:
@@ -353,50 +394,3 @@ The proposed adaptive calibration pipeline:
 - Transfer learning to new subjects with minimal calibration data
 
 ---
-
-
-
-
-**Last Updated:** June 5, 2026  
-**Status:** Phase 6 in progress | Phases 1-5 complete
-
-- `results/trajectory_comparison.png` — predicted trajectory over time
-
-#### 5.3.2 Statistical Validation
-To run the Wilcoxon signed-rank statistical test:
-```bash
-cd evaluation
-python run_statistics.py
-```
-
-Outputs: `evaluation/results/stats_results.json`
-
-#### 5.3.3 Baseline Comparison
-To evaluate standard ML baselines (CSP, FBCSP, EEGNet, EA):
-```bash
-cd evaluation
-python run_baselines.py
-```
-
-Outputs: `evaluation/results/baselines_results.json`
-
-#### 5.3.4 Ablation Study
-To run the ablation study across all component removals:
-```bash
-cd evaluation
-python run_ablation.py
-```
-
-Outputs: `evaluation/results/ablation_results.json`
-
-#### 5.3.5 Generate Results Tables
-To aggregate all evaluation results into markdown tables:
-```bash
-cd evaluation
-python make_tables.py
-```
-
-Outputs: `evaluation/results/RESULTS_TABLES.md`
-
----
-
